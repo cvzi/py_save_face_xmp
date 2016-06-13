@@ -1,7 +1,7 @@
 # py_save_face_xmp
 Python tool to detect or select faces on jpg images and save the position in the XMP metadata of the image file.
 
-The faces are stored in the JPG metadata in XMP tags. The standard is defined by the [Metadata Working Group Regions schema](http://exiv2.org/tags-xmp-mwg-rs.html). These tags are for example supported by Picasa which can also read and write them. An example path looks like this: Xmp.mwg-rs.Regions/mwg-rs:RegionList[1]/mwg-rs:Name
+The faces are stored in the JPG metadata in XMP tags. The standard is defined by the [Metadata Working Group Regions schema](http://exiv2.org/tags-xmp-mwg-rs.html). These tags are for example supported by Picasa which can also read and write them. An example path looks like this: `Xmp.mwg-rs.Regions/mwg-rs:RegionList[1]/mwg-rs:Name`
 
 The script uses the GExiv2 python API to read the XMP tags and exiv2 in the command line to write the tags (because writing XMP arrays/bags is not possible with GExiv2).
 
