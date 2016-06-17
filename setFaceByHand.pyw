@@ -1,10 +1,15 @@
 #!/usr/bin/env python2
 # https://github.com/cvzi/py_save_face_xmp
 
+import time
 import os
 import cv2
 import re
+import numpy as np
+from win32api import GetSystemMetrics
+
 from picaseXMPFaceReader import XMPFace
+
 
 """
 Reads images JPG from current directory
@@ -13,6 +18,7 @@ Left mouse:      draw rectangle around face
 Right mouse:     reset rectangle
 Middle mouse:    select detected face
 Enter:           save face to image metadata
+Left arrow:      previous image
 Right arrow:     skip image
 
 """
@@ -51,6 +57,7 @@ def selectFace(imagePath):
     global image2
     global resultRect
     global detectedFaces
+    global screenscale
 
 
     # Read the image
@@ -67,7 +74,7 @@ def selectFace(imagePath):
         index = len(faces)
     except:
         print("Cannot load %s" % imagePath)
-        return
+        return    
 
     # If no existing images were found, try to detect faces with opencv
     if len(faces) == 0:
@@ -95,25 +102,30 @@ def selectFace(imagePath):
 
     resultRect = None
 
+    # Scale image to screen size
+    screenwidth = GetSystemMetrics(0) - 20
+    screenheight = GetSystemMetrics(1) - 60
+    screenscale = min(1.0, screenheight/float(len(image)), screenwidth/float(len(image[0])))
+
+    # Show image in window
     while True:
-        cv2.imshow('image',image)
-        k = cv2.waitKey(1)
+        screenimage = cv2.resize(image, (0,0), fx=screenscale, fy=screenscale)
+        cv2.imshow('image',screenimage)
+        k = cv2.waitKey(10)
         if k == ord('q'): # q -> Quit
             cv2.destroyAllWindows()
             raise RuntimeError("Ctrl-C")
         elif k == 13: # Enter -> Save faces
             break
         elif k == 2555904: # Right arrow -> Skip image
-            resultRect = None
-            break  
-        
+            return 1
+        elif k == 2424832: # Left arrow -> Previous image
+            return -1
 
     if resultRect is not None:
         # Save face to metadata
         img_width = len(image[0])
         img_height = len(image)
-        
-        # Find name for face from filename
         try:
             name = re.sub(r"\s*\d+\.jpe?g$", "", os.path.basename(imagePath).split(",")[index]).strip()
         except:
@@ -128,13 +140,17 @@ def selectFace(imagePath):
         facereader.setFace(x0, y0, w, h, name, index)
         print("Saving to file...")
         facereader.save_file(imagePath)
+    return 1
 
 # mouse callback function
 def mouse_draw_rect(event,x,y,flags,param):
     global image,image2,ix,iy,drawing
     global resultRect
     global detectedFaces
-
+    
+    x = int(x*1.0/screenscale)
+    y = int(y*1.0/screenscale)
+    
     if event == cv2.EVENT_MBUTTONDOWN: # Middle mouse button
         # Use detected face, if clicked into rectangle
         for rect in detectedFaces:
@@ -177,10 +193,12 @@ if __name__ == "__main__":
     # Globals for mouse callback
     drawing = False # true if mouse is pressed
     ix,iy = -1,-1
+    screenscale = 1.0
 
     # Create window
     cv2.namedWindow('image')
     cv2.setMouseCallback('image',mouse_draw_rect)
+    cv2.moveWindow('image', 0, 0)
 
     # Walk directory
     fileList = []
@@ -191,9 +209,13 @@ if __name__ == "__main__":
                 fileList.append(os.path.join(root,file))
 
     # Open each file individually
-    for filepath in fileList:
+    i = 0
+    while i < len(fileList):
+        filepath = fileList[i]
         print(filepath)
-        selectFace(filepath)
+        i += selectFace(filepath)
+        if i < 0:
+            i = 0
 
 
     cv2.destroyAllWindows()
