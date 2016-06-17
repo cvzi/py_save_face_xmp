@@ -25,6 +25,7 @@ Controls:
  * Right mouse:     reset rectangle
  * Middle mouse:    select detected face
  * Enter:           save face to image metadata
+ * Left arrow:      previous image
  * Right arrow:     skip image
  * q or Ctrl-c:     quit
 
