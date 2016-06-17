@@ -76,7 +76,7 @@ def selectFace(imagePath):
         print("Cannot load %s" % imagePath)
         return    
 
-    # If no existing images were found, try to detect faces with opencv
+    # If no existing faces were found, try to detect faces with opencv
     if len(faces) == 0:
         print("Finding faces...")
         scale = 400.0 / len(image)
