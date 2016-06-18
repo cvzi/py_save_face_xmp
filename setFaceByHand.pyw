@@ -65,16 +65,16 @@ def selectFace(imagePath):
         image = cv2.imread(imagePath)
     except:
         print("Cannot load %s" % imagePath)
-        return
+        return 0
     
     # Read existing faces from tags
     try:
         facereader = XMPFace(imagePath)
         faces = facereader.getFaces()
         index = len(faces)
-    except:
+    except gi.repository.GLib.Error as e:
         print("Cannot load %s" % imagePath)
-        return    
+        return 0    
 
     # If no existing faces were found, try to detect faces with opencv
     if len(faces) == 0:
@@ -213,7 +213,12 @@ if __name__ == "__main__":
     while i < len(fileList):
         filepath = fileList[i]
         print(filepath)
-        i += selectFace(filepath)
+        resultcode = selectFace(filepath)
+        if not resultcode:
+            break
+            
+        i += resultcode
+        
         if i < 0:
             i = 0
 

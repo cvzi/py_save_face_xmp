@@ -1,14 +1,16 @@
 #!/usr/bin/env python2
-# https://github.com/cvzi/py_save_face_xmp
-
-from gi.repository import GExiv2
+import gi
 import os
 import tempfile
 import random
 import shutil
 import subprocess
 
-# See https://git.gnome.org/browse/gexiv2/tree/gexiv2/gexiv2-metadata.h
+gi.require_version('GExiv2', '0.10')
+from gi.repository import GExiv2
+
+
+#https://git.gnome.org/browse/gexiv2/tree/gexiv2/gexiv2-metadata.h
 class Imagedata(GExiv2.Metadata):
     def __init__(self, filename):
         super(Imagedata, self).__init__()
@@ -129,7 +131,7 @@ class XMPFace:
     def getFaces(self):
         results = []
         j = 0
-        for i in xrange(0,100):
+        for i in range(0,100):
             result = self.__getFace(i)
             if result is not None:
                 results.append(result)
@@ -148,13 +150,13 @@ class XMPFace:
         self.dim_w = float(width)
         self.dim_h = float(height)
         """
-        # This does not work! Cannot set XMP array/bag tags with GExiv2
+        # This does not work! Cannot set XMP tags with GExiv2.Metadata from gi
         self.img.set(self.facetags_keys["dim_u"], "pixel")
         self.img.set(self.facetags_keys["dim_w"], "%d" % width) 
         self.img.set(self.facetags_keys["dim_h"], "%d" % height)
         """
         # Let's use exiv2 instead
-        self.cmds.append("set Xmp.mwg-rs.Regions/mwg-rs:RegionList XmpText type=Bag") # Create the array
+        self.cmds.append("set Xmp.mwg-rs.Regions/mwg-rs:RegionList XmpText type=Bag")
         self.cmds.append("set %s %s" % (key("dim_u"), "pixel"))
         self.cmds.append("set %s %s" % (key("dim_w"), "%d" % width))      
         self.cmds.append("set %s %s" % (key("dim_h"), "%d" % height))
@@ -175,7 +177,7 @@ class XMPFace:
         rel_w = float(area_width) / self.dim_w
         rel_h = float(area_height) / self.dim_h
         """
-        # This does not work! Cannot set XMP array/bag tags with GExiv2
+        # This does not work! Cannot set XMP tags with GExiv2.Metadata from gi
         self.img.set(key("area_u"), "normalized")
         self.img.set(key("area_w"), "%f" % rel_w)
         self.img.set(key("area_h"), "%f" % rel_h)
@@ -206,7 +208,8 @@ class XMPFace:
 
         # Write tags with exiv2
         cmd = 'exiv2 mo -m "exiv2.txt" "%s"' % tmpfile
-        subprocess.call(cmd.encode('utf-8'))
+        DETACHED_PROCESS = 0x00000008
+        subprocess.call(cmd.encode('utf-8'), creationflags=DETACHED_PROCESS)
 
         # Copy file back to orginal file
         copyFile(tmpfile,filename)
