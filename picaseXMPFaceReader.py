@@ -209,7 +209,7 @@ class XMPFace:
         # Write tags with exiv2
         cmd = 'exiv2 mo -m "exiv2.txt" "%s"' % tmpfile
         DETACHED_PROCESS = 0x00000008
-        subprocess.call(cmd.encode('utf-8'), creationflags=DETACHED_PROCESS)
+        subprocess.call(cmd, creationflags=DETACHED_PROCESS)
 
         # Copy file back to orginal file
         copyFile(tmpfile,filename)
