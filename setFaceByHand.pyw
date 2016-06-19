@@ -6,7 +6,7 @@ import os
 import cv2
 import re
 import numpy as np
-from win32api import GetSystemMetrics
+import tkinter
 
 from picaseXMPFaceReader import XMPFace
 
@@ -126,8 +126,6 @@ def selectFace(imagePath):
     resultRect = None
 
     # Scale image to screen size
-    screenwidth = GetSystemMetrics(0) - 20
-    screenheight = GetSystemMetrics(1) - 60
     screenscale = min(1.0, screenheight/float(len(image)), screenwidth/float(len(image[0])))
 
     # Show image in window
@@ -138,25 +136,27 @@ def selectFace(imagePath):
         k = cv2.waitKey(10)
         if k == -1:
             continue
-
+        
         if not ctrl_input_active:
             if k == ord('q'): # q -> Quit
                 cv2.destroyAllWindows()
                 raise RuntimeError("Ctrl-C")
-            elif k == 13: # Enter -> Save faces
+            elif k == 10 or k == 13: # Enter -> Save faces
                 break
-            elif k == 2555904: # Right arrow -> Skip image
+            elif k == 65363 or k == 2555904: # Right arrow -> Skip image
                 return 1
-            elif k == 2424832: # Left arrow -> Previous image
+            elif k== 65361 or k == 2424832: # Left arrow -> Previous image
                 return -1
         elif ctrl_input_active:
             ctrl_changed = True
-            if k == 13: # Enter
+            if k == 10 or k == 13: # Enter
                 ctrl_input_active = False
-            elif k == 8: # Backspace
+            elif k == 8 or k == 65288: # Backspace
                 ctrl_input_str = ctrl_input_str[0:-1]
             elif k > 27 and k < 127: # Ascii, opencv does not support other characters
                 ctrl_input_str += chr(k)
+            elif k-65504 > 27 and k-65504 < 127:
+                ctrl_input_str += chr(k-65504).upper()
             else:
                 ctrl_changed = False
                 
@@ -215,14 +215,16 @@ def mouse_draw_rect(event,x,y,flags,param):
         # Drag rectangle
         if drawing == True:
             image = image2.copy()
-            cv2.rectangle(image,(ix,iy),(x,y),(255,255,0),2)
+            if ix < x and iy < y:
+                cv2.rectangle(image,(ix,iy),(x,y),(255,255,0),2)
 
     if event == cv2.EVENT_LBUTTONUP: # Left mouse button released
         # Stop rectangle
-        drawing = False
-        cv2.rectangle(image,(ix,iy),(x,y),(255,255,0),2)
-        resultRect = [(ix,iy),(x,y)]
-        ctrl_changed = True
+        if ix < x and iy < y:
+            drawing = False
+            cv2.rectangle(image,(ix,iy),(x,y),(255,255,0),2)
+            resultRect = [(ix,iy),(x,y)]
+            ctrl_changed = True
 
 # mouse callback function
 def ctrl_mouse_draw_rect(event,x,y,flags,param):
@@ -304,6 +306,13 @@ def ctrl_show_controls():
 
 
 if __name__ == "__main__":
+    # Detect screen resolution
+    root = tkinter.Tk()
+    screenwidth = root.winfo_screenwidth()
+    screenheight = root.winfo_screenheight()
+    root.destroy()
+    root = None
+    
     # Load patterns for face detection
     cascPath0 = "haarcascade_frontalface_alt.xml"
     cascPath1 = "haarcascade_profileface.xml"
@@ -315,6 +324,7 @@ if __name__ == "__main__":
     ix,iy = -1,-1
     screenscale = 1.0
     faces = []
+    detectedFaces = []
     orgimage = None
     resultRect = None
 

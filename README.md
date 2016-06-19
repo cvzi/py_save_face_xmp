@@ -15,7 +15,6 @@ Tested with/required software:
  * [exiv2](http://www.exiv2.org/)  0.25
  * GExiv2 0.10 which is inlcuded in [PyGObject](http://pygtk.org)
 
-It might run on *nix, but I did not test it.
 
  
 Run with `pythonw setFaceByHand.pyw` in the directory of the jpg files.

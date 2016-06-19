@@ -3,7 +3,7 @@
 
 import gi
 import os
-import sys
+import platform
 import tempfile
 import random
 import shutil
@@ -211,9 +211,15 @@ class XMPFace:
 
         # Write tags with exiv2
         cmd = 'exiv2 mo -m "exiv2.txt" "%s"' % tmpfile
-        DETACHED_PROCESS = 0x00000008
-        subprocess.call(cmd, creationflags=DETACHED_PROCESS)
-
+        if platform.system() == "Windows":
+            DETACHED_PROCESS = 0x00000008
+            x = subprocess.call(cmd, creationflags=DETACHED_PROCESS)
+        else:
+            x = subprocess.call(cmd, shell=True)
+        
+        if x != 0:
+            print("Errors occured while editing file with exiv2!")
+        
         # Copy file back to orginal file
         copyFile(tmpfile,filename)
         os.remove(tmpfile)
