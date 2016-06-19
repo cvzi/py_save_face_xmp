@@ -13,7 +13,7 @@ Tested with/required software:
  * [Python](https://www.python.org/downloads/release/python-27/) 2.7 or 3.4
  * [opencv](https://github.com/Itseez/opencv) 3.0.0 for Python
  * [exiv2](http://www.exiv2.org/)  0.25
- * GExiv2 0.10 which is inlcuded in [PyGObject](http://pygtk.org)
+ * GExiv2 0.10 (on Windows it is included in [PyGObject](http://pygtk.org)
 
 
  
