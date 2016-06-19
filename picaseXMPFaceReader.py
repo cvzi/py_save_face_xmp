@@ -1,6 +1,9 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
+# https://github.com/cvzi/py_save_face_xmp
+
 import gi
 import os
+import sys
 import tempfile
 import random
 import shutil
