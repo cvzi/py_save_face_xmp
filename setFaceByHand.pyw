@@ -6,7 +6,11 @@ import os
 import cv2
 import re
 import numpy as np
-import tkinter
+try:
+    import tkinter
+except:
+    import Tkinter
+    tkinter = Tkinter
 
 from picaseXMPFaceReader import XMPFace
 
