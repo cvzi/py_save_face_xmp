@@ -71,14 +71,18 @@ def selectFace(imagePath):
     global ctrl_input_active
     global ctrl_input_str
     global ctrl_changed
+
+    # Set window title
+    cv2.setWindowTitle("image", "File: %s" % os.path.basename(imagePath))
+    cv2.setWindowTitle("control", "Wait...  Skipping...")
     
     # Read the image
     try:
         image = cv2.imread(imagePath)
         orgimage = image.copy()
     except:
-        print("Cannot load %s" % imagePath)
-        return 0
+        print("Cannot load %s. Error 01" % imagePath)
+        return 1 # error, skip
     
     # Read existing faces from tags
     try:
@@ -86,28 +90,29 @@ def selectFace(imagePath):
         faces = facereader.getFaces()
         index = len(faces)
     except gi.repository.GLib.Error as e:
-        print("Cannot load %s" % imagePath)
-        return 0
+        print("Cannot load %s. Error 02" % imagePath)
+        return 1 # error, skip
 
     #if len(faces) > 0:
-    #    return 1 # skip
+    #    return 1 # a face exists, skip
     
 
-    # If no existing faces were found, try to detect faces with opencv
-    if len(faces) == 0:
-        print("Finding faces...")
-        scale = 400.0 / len(image)
-        grayscaleImage = cv2.resize(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (0,0), fx=scale, fy=scale)
-        detectedFaces = []
-        for casc in cascades:
-            f = detectFace(image, grayscaleImage, casc, scale=1.0/scale)
-            if len(f):
-                for r in f:
-                    detectedFaces.append(r)
-            f = detectFace(image, grayscaleImage, casc, scale=1.0/scale)
-            if len(f):
-                for r in f:
-                    detectedFaces.append(r)
+    # Try to detect faces with opencv
+    print("Finding faces...")
+    scale = 400.0 / len(image)
+    grayscaleImage = cv2.resize(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (0,0), fx=scale, fy=scale)
+    detectedFaces = []
+    for casc in cascades:
+        f = detectFace(image, grayscaleImage, casc, scale=1.0/scale)
+        if len(f):
+            for r in f:
+                detectedFaces.append(r)
+        f = detectFace(image, grayscaleImage, casc, scale=1.0/scale)
+        if len(f):
+            for r in f:
+                detectedFaces.append(r)
+
+    cv2.setWindowTitle("control", "Faces: %d, Detected: %d" % (len(faces), len(detectedFaces)))
         
     # Draw rectangles around the existing faces
     for (x, y, w, h, name) in faces:
@@ -310,6 +315,15 @@ def ctrl_show_controls():
 
 
 if __name__ == "__main__":
+    # Walk directory
+    fileList = []
+    rootdir = '.'
+    for root, subFolders, files in os.walk(rootdir):
+        for file in files:
+            if file.lower().endswith(".jpg") or file.lower().endswith(".jpeg"):
+                fileList.append(os.path.join(root,file))
+
+    
     # Detect screen resolution
     root = tkinter.Tk()
     screenwidth = root.winfo_screenwidth()
@@ -354,15 +368,6 @@ if __name__ == "__main__":
 
     cv2.setMouseCallback('control', ctrl_mouse_draw_rect)
 
-    
-    
-    # Walk directory
-    fileList = []
-    rootdir = '.'
-    for root, subFolders, files in os.walk(rootdir):
-        for file in files:
-            if file.lower().endswith(".jpg") or file.lower().endswith(".jpeg"):
-                fileList.append(os.path.join(root,file))
 
     # Open each file individually
     i = 0
