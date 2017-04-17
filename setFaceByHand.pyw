@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!python3
 # https://github.com/cvzi/py_save_face_xmp
 
 import time
@@ -41,14 +41,19 @@ def point_in_rect(px, py, rect, rect_y0=None, rect_x1=None, rect_y1=None):
 
 def detectFace(image, grayscaleImage, faceCascade, scale=1.0):
     # Detect faces with opencv
-    
-    detected_faces = faceCascade.detectMultiScale(
-        grayscaleImage,
-        scaleFactor=1.1,
-        minNeighbors=2,
-        minSize=(5, 5),
-        flags = cv2.CASCADE_SCALE_IMAGE
-    )
+
+    try:
+        detected_faces = faceCascade.detectMultiScale(
+            grayscaleImage,
+            scaleFactor=1.1,
+            minNeighbors=2,
+            minSize=(5, 5),
+            flags = cv2.CASCADE_SCALE_IMAGE
+        )
+    except cv2.error as e:
+        print("Error while trying to detect faces: detectMultiScale() throw error:")
+        print(e)
+        return []
 
     # Draw a rectangle around the detectedfaces
     result = []
@@ -174,6 +179,7 @@ def selectFace(imagePath):
 
     if resultRect is not None:
         # Save face to metadata
+        cv2.setWindowTitle("control", "Saving changes...")
         img_width = len(image[0])
         img_height = len(image)
         
