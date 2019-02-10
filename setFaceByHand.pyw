@@ -1,4 +1,4 @@
-#!python3
+#!python3.4
 # https://github.com/cvzi/py_save_face_xmp
 
 import time
@@ -20,7 +20,7 @@ Reads images JPG from current directory
 
 Left mouse:      draw rectangle around face
 Right mouse:     reset rectangle
-Middle mouse:    select detected face
+Middle mouse:    select detected face / save faces on second click
 Enter:           save face to image metadata
 Left arrow:      previous image
 Right arrow:     skip image
@@ -63,7 +63,7 @@ def detectFace(image, grayscaleImage, faceCascade, scale=1.0):
 
     return result
 
-def selectFace(imagePath):
+def selectFace(imagePath, noskip=False):
     # Open image in window
     global faces
     global orgimage
@@ -76,9 +76,13 @@ def selectFace(imagePath):
     global ctrl_input_active
     global ctrl_input_str
     global ctrl_changed
+    global requestSaveRect
+
+    requestSaveRect = False
 
     # Set window title
-    cv2.setWindowTitle("image", "File: %s" % os.path.basename(imagePath))
+    fileName = os.path.basename(imagePath)
+    cv2.setWindowTitle("image", "File: %s" % fileName)
     cv2.setWindowTitle("control", "Wait...  Skipping...")
     
     # Read the image
@@ -98,15 +102,15 @@ def selectFace(imagePath):
         print("Cannot load %s. Error 02" % imagePath)
         return 1 # error, skip
 
-    #if len(faces) > 0:
+    # Skip files that already have enough faces compared to their filename
+    #if len(faces) >= len(fileName.split(",")) and not noskip:
     #    return 1 # a face exists, skip
-    
 
     # Try to detect faces with opencv
+    detectedFaces = []
     print("Finding faces...")
     scale = 400.0 / len(image)
     grayscaleImage = cv2.resize(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY), (0,0), fx=scale, fy=scale)
-    detectedFaces = []
     for casc in cascades:
         f = detectFace(image, grayscaleImage, casc, scale=1.0/scale)
         if len(f):
@@ -127,9 +131,12 @@ def selectFace(imagePath):
 
     # Get a name from the filename
     try:
-        name = re.sub(r"\s*\d+\.jpe?g$", "", os.path.basename(imagePath).split(",")[index]).strip()
+        name = re.sub(r"\s*\(?\d+\)?\.jpe?g$", "", fileName.split(",")[index]).strip()
     except:
-        name = re.sub(r"\s*\d+\.jpe?g$", "", os.path.basename(imagePath)).strip()
+        name = re.sub(r"\s*\(?\d+\)?\.jpe?g$", "", fileName).strip()
+
+
+        
     ctrl_input_str = name
     ctrl_changed = True
         
@@ -148,19 +155,22 @@ def selectFace(imagePath):
         cv2.imshow('image',screenimage)
         ctrl_show_controls()
         k = cv2.waitKey(10)
-        if k == -1:
+        if k == -1 and not requestSaveRect:
             continue
         
         if not ctrl_input_active:
             if k == ord('q'): # q -> Quit
                 cv2.destroyAllWindows()
                 raise RuntimeError("Ctrl-C")
-            elif k == 10 or k == 13: # Enter -> Save faces
+            elif k == 10 or k == 13 or requestSaveRect: # Enter -> Save faces
                 break
             elif k == 65363 or k == 2555904: # Right arrow -> Skip image
                 return 1
-            elif k== 65361 or k == 2424832: # Left arrow -> Previous image
+            elif k == 65361 or k == 2424832: # Left arrow -> Previous image
                 return -1
+            elif k == 114: # r -> Reset index, start with face 0 and overwrite it
+                print("Reset index=0")
+                index = 0       
         elif ctrl_input_active:
             ctrl_changed = True
             if k == 10 or k == 13: # Enter
@@ -200,18 +210,24 @@ def mouse_draw_rect(event,x,y,flags,param):
     global resultRect
     global detectedFaces
     global ctrl_changed
+    global requestSaveRect
     
     x = int(x*1.0/screenscale)
     y = int(y*1.0/screenscale)
     
     if event == cv2.EVENT_MBUTTONDOWN: # Middle mouse button
-        # Use detected face, if clicked into rectangle
-        for rect in detectedFaces:
-            if point_in_rect(x, y, rect):
-                cv2.rectangle(image,(rect[0],rect[1]),(rect[2],rect[3]),(255,255,0),2)
-                resultRect = [(rect[0],rect[1]),(rect[2],rect[3])]
-                ctrl_changed = True
-                break
+
+        if resultRect and point_in_rect(x, y, resultRect):
+            # Save face if clicked into selected rect
+            requestSaveRect = True
+        else:    
+            # Use detected face, if clicked into rectangle
+            for rect in detectedFaces:
+                if point_in_rect(x, y, rect):
+                    cv2.rectangle(image,(rect[0],rect[1]),(rect[2],rect[3]),(255,255,0),2)
+                    resultRect = [(rect[0],rect[1]),(rect[2],rect[3])]
+                    ctrl_changed = True
+                    break
         
     
     elif event == cv2.EVENT_RBUTTONDOWN: # Right mouse button
@@ -351,6 +367,7 @@ if __name__ == "__main__":
     detectedFaces = []
     orgimage = None
     resultRect = None
+    requestSaveRect = False
 
     # Create window
     cv2.namedWindow('image')
@@ -366,7 +383,8 @@ if __name__ == "__main__":
     
     cv2.namedWindow('control')
     cv2.moveWindow('control', 800, 0)
-
+    cv2.setWindowTitle("control", "Loading...")
+    
     ctrl_image_empty = np.array([np.array([255, 255, 255], dtype=np.uint8) for i in range(420*220)]).reshape(220,420,3)
 
 
@@ -377,10 +395,11 @@ if __name__ == "__main__":
 
     # Open each file individually
     i = 0
+    last = -1
     while i < len(fileList):
         filepath = fileList[i]
-        print(filepath)
-        resultcode = selectFace(filepath)
+        resultcode = selectFace(filepath, last >= i)
+        last = i
         if not resultcode:
             break
             
